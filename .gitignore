@@ -1,0 +1,16 @@
+# Claude / tooling
+.claude/
+.claude*
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs / deps
+*.log
+node_modules/
+
+# Editor
+.vscode/
+.idea/

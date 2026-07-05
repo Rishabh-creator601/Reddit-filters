@@ -1,0 +1,113 @@
+.rpf-hidden {
+  display: none !important;
+}
+
+.rpf-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 6px 0;
+  padding: 10px 14px;
+  border: 1px dashed #c9c9c9;
+  border-radius: 10px;
+  background: #f6f7f8;
+  color: #555;
+  font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.rpf-placeholder .rpf-show {
+  flex: none;
+  cursor: pointer;
+  border: none;
+  border-radius: 999px;
+  padding: 5px 12px;
+  background: #0079d3;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.rpf-placeholder .rpf-show:hover {
+  background: #005fa3;
+}
+
+@media (prefers-color-scheme: dark) {
+  .rpf-placeholder {
+    border-color: #444;
+    background: #1a1a1b;
+    color: #b8b8b8;
+  }
+}
+
+.rpf-img-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2147483000;
+  cursor: pointer;
+  border: none;
+  border-radius: 999px;
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font: 600 12px/1.3 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.rpf-img-overlay:hover {
+  background: rgba(0, 0, 0, 0.85);
+}
+
+#rpf-block {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0b0c0e;
+  font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+#rpf-block .rpf-block-card {
+  max-width: 420px;
+  text-align: center;
+  color: #e8e8e8;
+  padding: 32px;
+}
+
+#rpf-block .rpf-block-emoji { font-size: 48px; margin-bottom: 8px; }
+#rpf-block h2 { margin: 8px 0; font-size: 22px; color: #fff; }
+#rpf-block p { margin: 8px 0 20px; color: #b8b8b8; }
+
+#rpf-block .rpf-block-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  border-radius: 999px;
+  background: #0079d3;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+#rpf-block .rpf-block-btn:hover { background: #005fa3; }
+
+#rpf-block-btn {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 2147483000;
+  padding: 11px 18px;
+  border: none;
+  border-radius: 999px;
+  background: #c0392b;
+  color: #fff;
+  font: 700 13px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  cursor: pointer;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);
+}
+
+#rpf-block-btn:hover { background: #a52f22; }

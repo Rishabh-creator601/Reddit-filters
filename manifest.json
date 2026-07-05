@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Reddit Positivity Filter",
+  "version": "1.1.0",
+  "description": "Hides Reddit posts/comments with negative or vulgar topics, blurs explicit images with an on-device AI model, and finds communities you love.",
+  "permissions": ["storage"],
+  "host_permissions": ["*://*.reddit.com/*"],
+  "content_scripts": [
+    {
+      "matches": ["*://*.reddit.com/*"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "vendor/tf.min.js",
+        "vendor/nsfwjs.min.js",
+        "model/model.json",
+        "model/group1-shard1of1"
+      ],
+      "matches": ["*://*.reddit.com/*"]
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Reddit Positivity Filter"
+  }
+}
