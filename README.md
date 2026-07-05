@@ -1,5 +1,9 @@
 # 🛡️ Reddit Positivity Filter
 
+[![Downloads](https://img.shields.io/github/downloads/Rishabh-creator601/Reddit-filters/total?color=0079d3&label=downloads)](https://github.com/Rishabh-creator601/Reddit-filters/releases)
+[![Latest release](https://img.shields.io/github/v/release/Rishabh-creator601/Reddit-filters?color=0079d3)](https://github.com/Rishabh-creator601/Reddit-filters/releases/latest)
+![Manifest V3](https://img.shields.io/badge/Manifest-V3-0079d3)
+
 A privacy-first Chrome / Edge extension that keeps **negative, vulgar and adult content off your Reddit** — and helps you discover the communities you actually care about.
 
 Everything runs **locally in your browser**. No servers, no tracking, no data ever leaves your machine.
@@ -23,7 +27,9 @@ Everything runs **locally in your browser**. No servers, no tracking, no data ev
 
 ## ⬇️ Download
 
-**[Download reddit-positivity-filter.zip](https://github.com/Rishabh-creator601/Reddit-filters/raw/main/reddit-positivity-filter.zip)** — then follow the install steps below.
+**[⬇️ Download reddit-positivity-filter.zip](https://github.com/Rishabh-creator601/Reddit-filters/releases/latest/download/reddit-positivity-filter.zip)** — then follow the install steps below.
+
+*(Downloads are counted via GitHub Releases — see the downloads badge above.)*
 
 ---
 
@@ -42,7 +48,7 @@ Everything runs **locally in your browser**. No servers, no tracking, no data ev
 
 ## 🔧 Install (Developer Mode — ~30 seconds)
 
-1. **[Download the ZIP](https://github.com/Rishabh-creator601/Reddit-filters/raw/main/reddit-positivity-filter.zip)** and unzip it (or `git clone` this repo).
+1. **[Download the ZIP](https://github.com/Rishabh-creator601/Reddit-filters/releases/latest/download/reddit-positivity-filter.zip)** and unzip it (or `git clone` this repo).
 2. Open **Chrome** → `chrome://extensions` (Edge → `edge://extensions`).
 3. Turn on **Developer mode** (top-right).
 4. Click **Load unpacked** and select the unzipped folder.
