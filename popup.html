@@ -1,138 +1,597 @@
 <meta charset="utf-8" />
 <style>
-  :root { color-scheme: light dark; }
+  :root {
+    color-scheme: light dark;
+    --bg: #eef3f0;
+    --card: #ffffff;
+    --ink: #1b2a26;
+    --sub: #5c6b66;
+    --line: #dce5e0;
+    --line-strong: #c3d1ca;
+    --accent: #156c5b;
+    --accent-hover: #0f574a;
+    --accent-soft: #e7f2ee;
+    --danger: #b04a3c;
+    --danger-soft: #f9edea;
+    --danger-line: #e5c0b8;
+    --ok: #2e7d32;
+    --pine-1: #10312b;
+    --pine-2: #1b4a40;
+    --pine-ink: #f2f7f4;
+    --pine-sub: #9fc0b5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #101614;
+      --card: #1a211e;
+      --ink: #e4ece8;
+      --sub: #93a39c;
+      --line: #2a342f;
+      --line-strong: #3a463f;
+      --accent: #3aa98f;
+      --accent-hover: #4fbfa4;
+      --accent-soft: #1d2f29;
+      --danger: #d9776a;
+      --danger-soft: #2c211e;
+      --danger-line: #55362f;
+      --ok: #6fbf73;
+      --pine-1: #0c2621;
+      --pine-2: #143830;
+    }
+  }
+
+  * { box-sizing: border-box; }
   body {
-    width: 340px;
+    width: 360px;
     margin: 0;
-    font: 13px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: #fff;
-    color: #1a1a1b;
+    font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
   }
-  header { padding: 12px 14px; border-bottom: 1px solid #eee; }
-  header h1 { margin: 0; font-size: 15px; }
-  header p { margin: 2px 0 0; font-size: 11px; color: #888; }
-  .tabs { display: flex; border-bottom: 1px solid #eee; }
+
+  /* ---- Header: the one loud thing on the page ---- */
+  header {
+    padding: 18px 18px 14px;
+    background:
+      radial-gradient(120% 90% at 85% -20%, rgba(255, 231, 168, 0.16), transparent 55%),
+      linear-gradient(135deg, var(--pine-1), var(--pine-2));
+    color: var(--pine-ink);
+  }
+  header .eyebrow {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--pine-sub);
+    margin-bottom: 2px;
+  }
+  header h1 {
+    margin: 0;
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    font-size: 21px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+  header p { margin: 3px 0 0; font-size: 11.5px; color: var(--pine-sub); }
+
+  /* ---- Tabs: segmented control ---- */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin: 12px 12px 0;
+    padding: 4px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+  }
   .tab {
-    flex: 1; padding: 9px; text-align: center; cursor: pointer;
-    font-weight: 600; color: #888; border-bottom: 2px solid transparent;
+    flex: 1;
+    padding: 7px 2px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--sub);
+    border-radius: 8px;
+    transition: background 0.15s, color 0.15s;
   }
-  .tab.active { color: #0079d3; border-bottom-color: #0079d3; }
-  .panel { display: none; padding: 14px; }
+  .tab:hover { color: var(--ink); }
+  .tab.active {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+
+  .panel { display: none; padding: 12px; }
   .panel.active { display: block; }
-  label.row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+
+  /* ---- Cards & section titles ---- */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+  .card:last-child { margin-bottom: 0; }
+  .card-title, .section-title {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--sub);
+    margin: 0 0 10px;
+  }
+
+  /* ---- Rows & switches ---- */
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .row:last-child { margin-bottom: 0; }
+  label.row { cursor: pointer; }
+  .lbl { flex: 1; min-width: 0; }
+  .lbl b { display: block; font-size: 13px; font-weight: 600; }
+  .lbl small { display: block; font-size: 11.5px; color: var(--sub); margin-top: 1px; }
+
+  input.sw {
+    appearance: none;
+    -webkit-appearance: none;
+    flex: none;
+    width: 36px;
+    height: 21px;
+    margin: 0;
+    border: none;
+    border-radius: 999px;
+    background: var(--line-strong);
+    position: relative;
+    cursor: pointer;
+    transition: background 0.18s;
+  }
+  input.sw::after {
+    content: "";
+    position: absolute;
+    top: 2.5px;
+    left: 2.5px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
+    transition: transform 0.18s;
+  }
+  input.sw:checked { background: var(--accent); }
+  input.sw:checked::after { transform: translateX(15px); }
+  input.sw:disabled { opacity: 0.45; cursor: default; }
+  input.sw:focus-visible,
+  .tab:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* ---- Inputs ---- */
   textarea {
-    width: 100%; box-sizing: border-box; height: 150px; resize: vertical;
-    font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace;
-    border: 1px solid #ccc; border-radius: 8px; padding: 8px;
-    background: #fafafa; color: inherit;
+    width: 100%;
+    height: 130px;
+    resize: vertical;
+    font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 9px 10px;
+    background: var(--bg);
+    color: inherit;
   }
-  .hint { font-size: 11px; color: #888; margin: 4px 0 10px; }
+  textarea#allowedSubs { height: 88px; }
   input[type="text"] {
-    width: 100%; box-sizing: border-box; padding: 8px 10px;
-    border: 1px solid #ccc; border-radius: 8px; font-size: 13px;
-    background: #fafafa; color: inherit;
+    width: 100%;
+    padding: 8px 11px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    font-size: 13px;
+    background: var(--bg);
+    color: inherit;
   }
+  input[type="range"] { width: 100%; accent-color: var(--accent); margin: 4px 0 2px; }
+  .hint { font-size: 11.5px; color: var(--sub); margin: 6px 0 10px; }
+  .hint:last-child { margin-bottom: 0; }
+  .hint code {
+    font: 11px ui-monospace, Menlo, Consolas, monospace;
+    background: var(--bg);
+    border-radius: 4px;
+    padding: 0 4px;
+  }
+  .slider-val { font-size: 11.5px; color: var(--sub); }
+
+  /* ---- Buttons ---- */
   button.primary {
-    margin-top: 10px; width: 100%; padding: 9px; border: none; border-radius: 8px;
-    background: #0079d3; color: #fff; font-weight: 700; font-size: 13px; cursor: pointer;
+    width: 100%;
+    padding: 9px 14px;
+    border: none;
+    border-radius: 10px;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s;
   }
-  button.primary:hover { background: #005fa3; }
-  #status { font-size: 11px; color: #2e7d32; margin-top: 6px; min-height: 14px; }
-  #results { margin-top: 12px; }
-  .sub {
-    display: block; padding: 8px 10px; margin-bottom: 6px; border-radius: 8px;
-    border: 1px solid #eee; text-decoration: none; color: inherit;
+  button.primary:hover { background: var(--accent-hover); }
+  .minibtn {
+    border: 1px solid var(--line-strong);
+    background: var(--card);
+    color: inherit;
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
   }
-  .sub:hover { border-color: #0079d3; background: #f5faff; }
-  .sub .name { font-weight: 700; color: #0079d3; }
-  .sub .subs { font-size: 11px; color: #888; }
-  .sub .desc { display: block; font-size: 11px; color: #777; margin-top: 2px; }
-  .muted { color: #888; font-size: 12px; }
+  .minibtn:hover { border-color: var(--accent); color: var(--accent); }
+  .link {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 11.5px;
+    cursor: pointer;
+    padding: 0;
+  }
+  .btn-row { display: flex; gap: 8px; margin-top: 10px; }
+  .btn-row .primary { flex: 1; }
+
+  #status, #allowedStatus, #themesStatus, #backupStatus {
+    font-size: 11.5px;
+    margin-top: 6px;
+    min-height: 15px;
+    color: var(--ok);
+  }
+
+  hr { border: none; border-top: 1px solid var(--line); margin: 12px 0; }
+  .muted { color: var(--sub); font-size: 12px; }
+
+  /* ---- Community result rows (finder + allowlist search) ---- */
+  #results, #allowResults { margin-top: 10px; }
   .sub-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-  .sub-row .sub { flex: 1; margin-bottom: 0; }
-  .sub-row .block-btn {
-    flex: none; border: 1px solid #e0a0a0; border-radius: 7px;
-    background: #fff5f5; color: #c0392b; font-size: 12px; font-weight: 700;
-    padding: 6px 12px; cursor: pointer;
+  .sub {
+    flex: 1;
+    min-width: 0;
+    display: block;
+    padding: 8px 11px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    text-decoration: none;
+    color: inherit;
+    background: var(--card);
   }
-  .sub-row .block-btn:hover { background: #c0392b; color: #fff; border-color: #c0392b; }
-  .subtop { display: flex; justify-content: space-between; align-items: baseline; }
-  .link { background: none; border: none; color: #0079d3; font-size: 11px; cursor: pointer; padding: 0; }
+  .sub:hover { border-color: var(--accent); background: var(--accent-soft); }
+  .subtop { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .sub .name { font-weight: 700; color: var(--accent); }
+  .sub .subs { font-size: 11px; color: var(--sub); white-space: nowrap; }
+  .sub .desc {
+    display: block;
+    font-size: 11px;
+    color: var(--sub);
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .sub-row .allow-btn {
+    flex: none;
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 11px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .sub-row .allow-btn:hover { background: var(--accent); color: #fff; }
+  .sub-row .allow-btn:disabled {
+    opacity: 0.55;
+    cursor: default;
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .sub-row .block-btn {
+    flex: none;
+    border: 1px solid var(--danger-line);
+    border-radius: 8px;
+    background: var(--danger-soft);
+    color: var(--danger);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 11px;
+    cursor: pointer;
+  }
+  .sub-row .block-btn:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+
+  /* ---- Blocked-community chips ---- */
   .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
   .chip {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: #fff5f5; border: 1px solid #e0a0a0; color: #c0392b;
-    border-radius: 999px; padding: 4px 6px 4px 10px; font-size: 12px; font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--danger-soft);
+    border: 1px solid var(--danger-line);
+    color: var(--danger);
+    border-radius: 999px;
+    padding: 4px 6px 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
   }
   .chip .chip-x {
-    border: none; background: #e0a0a0; color: #fff; border-radius: 50%;
-    width: 16px; height: 16px; font-size: 12px; line-height: 1; cursor: pointer; padding: 0;
+    border: none;
+    background: var(--danger-line);
+    color: #fff;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
   }
-  .chip .chip-x:hover { background: #c0392b; }
-  hr { border: none; border-top: 1px solid #eee; margin: 14px 0; }
-  .section-title { font-weight: 700; font-size: 12px; margin-bottom: 8px; }
-  .minibtn {
-    border: 1px solid #ccc; background: #fafafa; color: inherit; border-radius: 7px;
-    padding: 7px 14px; font-size: 12px; font-weight: 600; cursor: pointer;
+  .chip .chip-x:hover { background: var(--danger); }
+
+  /* ---- Theme cards ---- */
+  .theme-card {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 10px;
+    margin-bottom: 10px;
+    background: var(--bg);
   }
-  .minibtn:hover { border-color: #0079d3; color: #0079d3; }
-  input[type="range"] { width: 100%; }
-  .slider-val { font-size: 11px; color: #888; }
-  @media (prefers-color-scheme: dark) {
-    body { background: #1a1a1b; color: #d7dadc; }
-    header, .tabs, .sub { border-color: #343536; }
-    textarea, input[type="text"] { background: #272729; border-color: #343536; }
-    .sub:hover { background: #232427; }
+  .theme-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .theme-head .theme-name {
+    flex: 1;
+    min-width: 0;
+    padding: 5px 8px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    background: var(--card);
+    color: inherit;
+  }
+  .theme-head .theme-en {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--sub);
+  }
+  .theme-en input { accent-color: var(--accent); }
+  .theme-del {
+    border: 1px solid var(--danger-line);
+    background: var(--danger-soft);
+    color: var(--danger);
+    border-radius: 8px;
+    width: 24px;
+    height: 24px;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 0;
+    flex: none;
+  }
+  .theme-del:hover { background: var(--danger); color: #fff; }
+  .grp-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .grp-row .grp-name {
+    width: 78px;
+    flex: none;
+    padding: 5px 6px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--card);
+    color: inherit;
+  }
+  .grp-row .grp-words {
+    flex: 1;
+    min-width: 0;
+    padding: 5px 6px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    font-size: 11px;
+    background: var(--card);
+    color: inherit;
+  }
+  .grp-row .grp-del {
+    border: none;
+    background: var(--line);
+    color: var(--sub);
+    border-radius: 6px;
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    flex: none;
+  }
+  .grp-row .grp-del:hover { background: var(--danger); color: #fff; }
+  .theme-maj { font-size: 11px; color: var(--sub); margin: 8px 0 2px; }
+  .theme-maj b { color: var(--accent); }
+  .theme-test { margin-top: 8px; }
+  .theme-testin {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    font-size: 11px;
+    background: var(--card);
+    color: inherit;
+  }
+  .theme-testout { font-size: 11px; margin-top: 5px; min-height: 14px; }
+  .theme-testout.block { color: var(--danger); font-weight: 700; }
+  .theme-testout.allow { color: var(--ok); }
+
+  /* ---- Footer: backup, always within reach ---- */
+  footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px 12px;
+    border-top: 1px solid var(--line);
+  }
+  footer .foot-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--sub);
+    margin-right: auto;
+  }
+  footer #backupStatus { margin: 0; min-height: 0; flex-basis: 100%; }
+  footer { flex-wrap: wrap; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
   }
 </style>
 
 <header>
-  <h1>Reddit Positivity Filter</h1>
-  <p>Hide negative topics &amp; find communities you love.</p>
+  <span class="eyebrow">For Reddit</span>
+  <h1>Positivity Filter</h1>
+  <p>Choose what reaches you.</p>
 </header>
 
-<div class="tabs">
-  <div class="tab active" data-tab="filter">Filter</div>
-  <div class="tab" data-tab="finder">Find communities</div>
-</div>
+<nav class="tabs">
+  <div class="tab active" data-tab="home" tabindex="0">Home</div>
+  <div class="tab" data-tab="filter" tabindex="0">Filters</div>
+  <div class="tab" data-tab="media" tabindex="0">Media</div>
+  <div class="tab" data-tab="finder" tabindex="0">Discover</div>
+</nav>
 
-<div class="panel active" id="panel-filter">
-  <label class="row"><input type="checkbox" id="enabled" /> Enable keyword filtering</label>
-  <label class="row"><input type="checkbox" id="hideNsfw" /> <b>Block all adult / NSFW posts &amp; communities</b></label>
-  <div class="row" id="lockRow"><button class="link" id="lockBtn">🔒 Lock this on (can't be turned off here)</button></div>
-  <div class="hint" id="lockedNote" style="display:none;">🔒 Adult blocking is <b>locked on</b>. It can't be switched off here — the only way to remove it is to uninstall the extension in <code>chrome://extensions</code>.</div>
-  <label class="row"><input type="checkbox" id="strict" /> Strict whole-word match (fewer false hits)</label>
-  <div class="hint">One keyword or phrase per line. Matches titles &amp; body text on reddit.com.</div>
-  <textarea id="keywords" spellcheck="false"></textarea>
-  <button class="primary" id="save">Save filter</button>
-  <div id="status"></div>
-
-  <hr />
-  <div class="section-title">💾 Backup &amp; restore</div>
-  <div class="hint">Save your keywords &amp; blocked communities to a file, or load them back (e.g. on another computer).</div>
-  <div class="row" style="gap:8px;">
-    <button class="minibtn" id="exportBtn">⬇ Export</button>
-    <button class="minibtn" id="importBtn">⬆ Import</button>
-    <input type="file" id="importFile" accept="application/json,.json" style="display:none;" />
+<!-- ================ HOME ================ -->
+<div class="panel active" id="panel-home">
+  <div class="card">
+    <div class="card-title">Home feed</div>
+    <label class="row">
+      <span class="lbl"><b>Block the home feed</b><small>Shows a calm block screen instead. Chat, chat requests and notifications keep working.</small></span>
+      <input class="sw" type="checkbox" id="homeBlock" />
+    </label>
+    <label class="row">
+      <span class="lbl"><b>Only show allowed communities</b><small>Every other community disappears from the home feed.</small></span>
+      <input class="sw" type="checkbox" id="allowMode" />
+    </label>
   </div>
-  <div id="backupStatus" class="hint" style="min-height:14px;"></div>
 
-  <hr />
-  <div class="section-title">🔞 Explicit image filter (on-device AI)</div>
-  <label class="row"><input type="checkbox" id="imgFilter" /> Blur nude / explicit images</label>
-  <label class="row"><input type="checkbox" id="imgIncludeSexy" /> Also blur revealing / short-dress images</label>
-  <div class="hint">Sensitivity — higher blurs more (and may over-blur).</div>
-  <input type="range" id="imgSensitivity" min="1" max="100" step="1" />
-  <div class="slider-val"><span id="sensVal">60</span>/100</div>
-  <div class="hint">Runs a ~7MB model locally on first use. No image leaves your browser. Works on Reddit-hosted images; external images that block access are skipped.</div>
+  <div class="card">
+    <div class="card-title">Allowed communities</div>
+    <div class="row">
+      <input type="text" id="allowSearch" placeholder="Search communities… e.g. gardening" />
+      <button class="minibtn" id="allowFind">Search</button>
+    </div>
+    <div id="allowResults"></div>
+    <div class="hint">Search and click <b>＋ Allow</b>, or type one community per line (with or without <code>r/</code>). <b>Verify</b> checks that each name exists on Reddit. Community pages you open directly are not affected.</div>
+    <textarea id="allowedSubs" spellcheck="false" placeholder="e.g.&#10;AskScience&#10;programming&#10;wholesomememes"></textarea>
+    <div class="btn-row">
+      <button class="primary" id="saveAllowed">Save list</button>
+      <button class="minibtn" id="verifyAllowed" title="Check that every listed community exists on Reddit">Verify names</button>
+    </div>
+    <div id="allowedStatus"></div>
+  </div>
 </div>
 
+<!-- ================ FILTERS ================ -->
+<div class="panel" id="panel-filter">
+  <div class="card">
+    <div class="card-title">Keywords</div>
+    <label class="row">
+      <span class="lbl"><b>Hide posts with these keywords</b><small>Matches titles and body text across Reddit.</small></span>
+      <input class="sw" type="checkbox" id="enabled" />
+    </label>
+    <label class="row">
+      <span class="lbl"><b>Whole-word match only</b><small>Stops “war” from matching “warm”.</small></span>
+      <input class="sw" type="checkbox" id="strict" />
+    </label>
+    <textarea id="keywords" spellcheck="false"></textarea>
+    <div class="btn-row"><button class="primary" id="save">Save keywords</button></div>
+    <div id="status"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Adult content</div>
+    <label class="row">
+      <span class="lbl"><b>Block all adult content</b><small>Hides 18+ posts and blocks 18+ community pages.</small></span>
+      <input class="sw" type="checkbox" id="hideNsfw" />
+    </label>
+    <div class="row" id="lockRow"><button class="link" id="lockBtn">🔒 Lock this on — can't be undone here</button></div>
+    <div class="hint" id="lockedNote" style="display:none;">🔒 Adult blocking is <b>locked on</b>. The only way to remove it is to uninstall the extension in <code>chrome://extensions</code>.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Themes — connected concepts</div>
+    <label class="row">
+      <span class="lbl"><b>Block connected concepts</b><small>Hides a post when most of a theme's concepts appear together, even without the exact phrase.</small></span>
+      <input class="sw" type="checkbox" id="themesEnabled" />
+    </label>
+    <div id="themes"></div>
+    <div class="btn-row">
+      <button class="minibtn" id="addTheme">+ Add theme</button>
+      <button class="primary" id="saveThemes">Save themes</button>
+    </div>
+    <div id="themesStatus"></div>
+  </div>
+</div>
+
+<!-- ================ MEDIA ================ -->
+<div class="panel" id="panel-media">
+  <div class="card">
+    <div class="card-title">Explicit images</div>
+    <label class="row">
+      <span class="lbl"><b>Blur nude or explicit images</b><small>A 7 MB model runs in your browser on first use. No image leaves your device.</small></span>
+      <input class="sw" type="checkbox" id="imgFilter" />
+    </label>
+    <label class="row">
+      <span class="lbl"><b>Also blur revealing images</b><small>Broader — expect more false positives.</small></span>
+      <input class="sw" type="checkbox" id="imgIncludeSexy" />
+    </label>
+    <div class="row" style="margin-top:12px;">
+      <span class="lbl"><b>Sensitivity</b></span>
+      <span class="slider-val"><span id="sensVal">60</span>/100</span>
+    </div>
+    <input type="range" id="imgSensitivity" min="1" max="100" step="1" />
+    <div class="hint">Higher blurs more, and may over-blur.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Text in images</div>
+    <label class="row">
+      <span class="lbl"><b>Read text inside images</b><small>Applies your keyword and theme filters to memes and screenshots. Runs on your device; slower, one image at a time.</small></span>
+      <input class="sw" type="checkbox" id="ocrEnabled" />
+    </label>
+  </div>
+</div>
+
+<!-- ================ DISCOVER ================ -->
 <div class="panel" id="panel-finder">
-  <div id="blocked-section"></div>
-  <div class="hint">Type an interest — get the top communities plus related ones. Hit <b>Block</b> on any community to hide its posts everywhere and block its page.</div>
-  <input type="text" id="query" placeholder="e.g. machine learning" />
-  <button class="primary" id="find">Find communities</button>
-  <div id="results"></div>
+  <div class="card">
+    <div id="blocked-section"></div>
+    <div class="card-title">Find communities</div>
+    <div class="hint">Type an interest to get the top communities plus related ones. <b>Block</b> hides a community everywhere and blocks its page.</div>
+    <input type="text" id="query" placeholder="e.g. machine learning" />
+    <div class="btn-row"><button class="primary" id="find">Find communities</button></div>
+    <div id="results"></div>
+  </div>
 </div>
+
+<footer>
+  <span class="foot-label">Backup</span>
+  <button class="minibtn" id="exportBtn">Export</button>
+  <button class="minibtn" id="importBtn">Import</button>
+  <input type="file" id="importFile" accept="application/json,.json" style="display:none;" />
+  <div id="backupStatus"></div>
+</footer>
 
 <script src="popup.js"></script>

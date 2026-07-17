@@ -11,7 +11,13 @@ const DEFAULTS = {
   imgFilter: true,        // AI image blurring (loads a ~7MB model on first use)
   imgIncludeSexy: false,  // also blur "revealing / short-dress" (broader, more false positives)
   imgSensitivity: 60,     // 1..100, higher = stricter
+  ocrEnabled: false,      // read text inside images (OCR) and run it through keyword + theme filters
   hiddenSubs: [],         // communities blocked with × (hidden in feeds + page blocked + not recommended)
+  allowMode: false,       // home feed: only posts from allowedSubs are shown
+  allowedSubs: [],        // communities allowed on the home feed when allowMode is on
+  homeBlock: false,       // block the home feed entirely (chat + notifications keep working)
+  themesEnabled: true,    // master switch for concept-connection "theme" filters
+  themes: [],             // concept-group theme filters (see THEME_STARTER); seeded on first run
   keywords: [
     // Violence / crime
     "murder", "kill", "homicide", "manslaughter", "stab", "shooting", "massacre",
@@ -41,6 +47,22 @@ const DEFAULTS = {
   ]
 };
 
+// Starter theme, seeded once so the concept-connection filter works on install.
+// A "theme" blocks a post when a majority of its concept groups appear together.
+const THEME_STARTER = [
+  {
+    name: "Example: safety · women · country · laws",
+    enabled: true,
+    minGroups: 3, // block when >= 3 of the 4 concepts connect
+    groups: [
+      { name: "Safe",    words: ["safe", "safety", "secure", "security", "protection", "protect", "unsafe"] },
+      { name: "Women",   words: ["women", "woman", "girl", "girls", "female", "females", "ladies", "lady"] },
+      { name: "Country", words: ["country", "nation", "national", "state", "government", "govt"] },
+      { name: "Laws",    words: ["law", "laws", "legal", "act", "bill", "policy", "rights", "court"] }
+    ]
+  }
+];
+
 // Related-topic map so a search expands into synonym / adjacent communities.
 const RELATED = {
   "machine learning": ["data science", "deep learning", "artificial intelligence", "statistics", "computer vision", "natural language processing", "neural networks"],
@@ -60,6 +82,7 @@ const RELATED = {
 
 let cfg = { ...DEFAULTS };
 let matcher = null;
+let compiledThemes = []; // [{ name, minGroups, groups: [{ name, re }] }]
 
 const SEL = "shreddit-post, shreddit-comment, .thing.link, .thing.comment";
 
@@ -70,6 +93,44 @@ function buildMatcher() {
   if (!words.length) { matcher = null; return; }
   const body = words.map(escapeRe).join("|");
   matcher = new RegExp("\\b(" + body + ")" + (cfg.strict ? "\\b" : ""), "i");
+}
+
+// A "theme" fires when a majority of its concept groups are present in one post.
+// Each group is a set of seed words; a group is "hit" if any of its words appears.
+// Respects the same strict/whole-word toggle as the keyword filter.
+function groupRegex(words) {
+  const clean = (words || []).map(w => String(w).trim().toLowerCase()).filter(Boolean);
+  if (!clean.length) return null;
+  const body = clean.map(escapeRe).join("|");
+  return new RegExp("\\b(" + body + ")" + (cfg.strict ? "\\b" : ""), "i");
+}
+
+// Majority of N groups = more than half (4->3, 3->2, 2->2). User can override.
+function majorityOf(n) { return Math.floor(n / 2) + 1; }
+
+function buildThemes() {
+  compiledThemes = [];
+  if (cfg.themesEnabled === false) return;
+  (cfg.themes || []).forEach(t => {
+    if (!t || t.enabled === false) return;
+    const groups = (t.groups || [])
+      .map(g => ({ name: g.name || "", re: groupRegex(g.words) }))
+      .filter(g => g.re);
+    if (groups.length < 2) return; // a "connection" needs at least two concepts
+    const maj = majorityOf(groups.length);
+    let need = Number.isFinite(t.minGroups) ? t.minGroups : maj;
+    need = Math.max(2, Math.min(groups.length, need));
+    compiledThemes.push({ name: t.name || "theme", minGroups: need, groups });
+  });
+}
+
+// Returns { hit, need, groupsHit:[names] } for a compiled theme against text.
+function matchTheme(text, theme) {
+  const groupsHit = [];
+  for (const g of theme.groups) {
+    if (g.re.test(text)) groupsHit.push(g.name || "concept");
+  }
+  return { hit: groupsHit.length >= theme.minGroups, need: theme.minGroups, groupsHit };
 }
 
 function textOf(el) {
@@ -156,6 +217,38 @@ function buildBlocked() {
   blockedSubs = new Set((cfg.hiddenSubs || []).map(s => String(s).toLowerCase()));
 }
 
+// Home-feed allowlist: when on, ONLY these communities may appear on the home
+// feed — every other community's posts are removed (no placeholder).
+let allowedSubs = new Set();
+function buildAllowed() {
+  allowedSubs = new Set(
+    (cfg.allowedSubs || [])
+      .map(s => String(s).trim().replace(/^\/?r\//i, "").toLowerCase())
+      .filter(Boolean)
+  );
+}
+
+function allowModeActive() {
+  return !!cfg.allowMode && allowedSubs.size > 0;
+}
+
+// The home feed = reddit.com root and its sort variants (new + old Reddit).
+// Community pages, search, profiles etc. are untouched by the allowlist.
+// The hostname guard matters: chat.reddit.com's path is also "/" — chat and
+// chat requests must NEVER be treated as the home feed (nor mod./ads. tools).
+function isHomeFeed() {
+  if (!/^(www\.|old\.|new\.)?reddit\.com$/i.test(location.hostname)) return false;
+  const p = location.pathname.replace(/\/+$/, "") || "/";
+  return p === "/" || /^\/(best|hot|new|rising|top|controversial)$/i.test(p);
+}
+
+// Remove a post outright — a home feed 90% made of placeholders would be noise.
+function hideSilently(el) {
+  if (el.dataset.rpfHidden) return;
+  el.dataset.rpfHidden = "1";
+  cardFor(el).classList.add("rpf-hidden");
+}
+
 function subredditOf(el) {
   if (!el.getAttribute) return "";
   const n = el.getAttribute("subreddit-name") ||       // new reddit
@@ -168,6 +261,7 @@ const subGateCache = new Map(); // "subname" -> boolean(over18)
 
 async function checkSubredditGate() {
   removeBlock(); // clear any stale block when navigating
+  if (cfg.homeBlock && isHomeFeed()) { blockHomePage(); return; }
   const m = location.pathname.match(/^\/r\/([A-Za-z0-9_]+)/);
   if (!m) return;
   const sub = m[1].toLowerCase();
@@ -203,6 +297,85 @@ function blockPage(sub, kind) {
     '</div>';
   document.documentElement.appendChild(div);
   document.documentElement.style.overflow = "hidden";
+}
+
+// Full-screen block for the home feed. Deliberately NOT a dead end: chat
+// (including chat requests, which live on chat.reddit.com), notifications and
+// community search all keep working — only the feed itself is off.
+function fmtSubCount(n) {
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + "M";
+  if (n >= 1e3) return (n / 1e3).toFixed(0) + "k";
+  return String(n || 0);
+}
+
+function blockHomePage() {
+  if (document.getElementById("rpf-block")) return;
+  const div = document.createElement("div");
+  div.id = "rpf-block";
+  div.innerHTML =
+    '<div class="rpf-block-card">' +
+    '<div class="rpf-block-emoji">🏡</div>' +
+    '<h2>Home feed blocked</h2>' +
+    '<p>You turned the Reddit home feed off. You can still search communities, chat and read notifications.</p>' +
+    '<div class="rpf-block-search">' +
+    '<input id="rpf-search-in" type="text" placeholder="Search communities…" maxlength="80" />' +
+    '<button id="rpf-search-btn" type="button">Search</button>' +
+    '</div>' +
+    '<div id="rpf-search-results"></div>' +
+    '<div class="rpf-block-actions">' +
+    '<a class="rpf-block-btn" href="https://chat.reddit.com/">💬 Open chat</a>' +
+    '<a class="rpf-block-btn rpf-block-btn2" href="https://www.reddit.com/notifications">🔔 Notifications</a>' +
+    '</div>' +
+    '<p class="rpf-block-note">Turn this off from the extension popup any time.</p>' +
+    '</div>';
+  document.documentElement.appendChild(div);
+  document.documentElement.style.overflow = "hidden";
+
+  // Search runs through the same recommender as the popup's finder, so blocked
+  // and 18+ communities never show up. Opening a community page is fine — the
+  // block covers only the home feed.
+  const input = div.querySelector("#rpf-search-in");
+  const btn = div.querySelector("#rpf-search-btn");
+  const out = div.querySelector("#rpf-search-results");
+  let searching = false;
+  async function go() {
+    const q = input.value.trim();
+    if (!q || searching) return;
+    searching = true;
+    out.textContent = "";
+    const p = document.createElement("p");
+    p.className = "rpf-muted";
+    p.textContent = "Searching…";
+    out.appendChild(p);
+    const res = await recommend(q).catch(() => null);
+    searching = false;
+    const list = (res && res.list) || [];
+    out.textContent = "";
+    if (!list.length) {
+      const none = document.createElement("p");
+      none.className = "rpf-muted";
+      none.textContent = "No communities found. Try a different term.";
+      out.appendChild(none);
+      return;
+    }
+    list.slice(0, 8).forEach(s => {
+      const a = document.createElement("a");
+      a.className = "rpf-sr";
+      a.href = s.url;
+      const name = document.createElement("span");
+      name.className = "rpf-sr-name";
+      name.textContent = "r/" + s.name;
+      const subs = document.createElement("span");
+      subs.className = "rpf-sr-subs";
+      subs.textContent = fmtSubCount(s.subs) + " members";
+      a.appendChild(name);
+      a.appendChild(subs);
+      out.appendChild(a);
+    });
+  }
+  btn.addEventListener("click", go);
+  input.addEventListener("keydown", e => { if (e.key === "Enter") go(); });
+  input.focus();
 }
 
 // The subreddit currently being viewed (null on home / all / popular / non-sub pages).
@@ -248,6 +421,11 @@ function removeBlock() {
 function processOne(el) {
   if (!el.dataset || el.dataset.rpfSeen) return;
   el.dataset.rpfSeen = "1";
+  if (allowModeActive() && isHomeFeed()) {
+    const sub = subredditOf(el);
+    // Only posts carry a subreddit attribute; anything without one is left alone.
+    if (sub && !allowedSubs.has(sub)) { hideSilently(el); return; }
+  }
   if (blockedSubs.size) {
     const sub = subredditOf(el);
     if (sub && blockedSubs.has(sub)) { hideEl(el, "blocked community r/" + sub, false); return; }
@@ -261,12 +439,24 @@ function processOne(el) {
   }
   if (cfg.enabled && matcher) {
     const m = matcher.exec(textOf(el));
-    if (m) hideEl(el, 'mentions "' + m[1] + '"');
+    if (m) { hideEl(el, 'mentions "' + m[1] + '"'); return; }
+  }
+  if (compiledThemes.length) {
+    const txt = textOf(el);
+    for (const t of compiledThemes) {
+      const r = matchTheme(txt, t);
+      if (r.hit) {
+        // Hard-hide (no "Show anyway"): the user asked for these to be blocked/banned.
+        hideEl(el, 'theme "' + t.name + '" (' + r.groupsHit.join(" + ") + ')', false);
+        return;
+      }
+    }
   }
 }
 
 function filteringActive() {
-  return cfg.hideNsfw || blockedSubs.size > 0 || (cfg.enabled && matcher);
+  return cfg.hideNsfw || blockedSubs.size > 0 || (cfg.enabled && matcher) ||
+         compiledThemes.length > 0 || (allowModeActive() && isHomeFeed());
 }
 
 function scan(root) {
@@ -287,7 +477,9 @@ function unhideAll() {
 
 function applyAll() {
   buildMatcher();
+  buildThemes();
   buildBlocked();
+  buildAllowed();
   unhideAll();
   scan(document); // scan() checks its own gates (keyword + NSFW + blocked subs)
 }
@@ -389,8 +581,8 @@ async function ensureModel() {
   if (modelPromise) return modelPromise;
   modelPromise = (async () => {
     // Lazy-load the ~7MB library + weights only when the user turns this on.
-    await import(chrome.runtime.getURL("vendor/tf.min.js"));
-    await import(chrome.runtime.getURL("vendor/nsfwjs.min.js"));
+    await import(chrome.runtime.getURL("vendor/tf.js"));
+    await import(chrome.runtime.getURL("vendor/nsfwjs.js"));
     const tf = globalThis.tf;
     const nsfwjs = globalThis.nsfwjs;
     if (tf.enableProdMode) tf.enableProdMode();
@@ -489,6 +681,79 @@ function scanImages(root) {
   pump();
 }
 
+// ---- On-device OCR (Tesseract.js, via the offscreen document) ----
+// Reads text baked into images and runs it through the SAME keyword + theme
+// filters as normal post text. OCR is heavy, so it's opt-in and one-at-a-time.
+const ocrQueue = [];
+let ocrActive = 0;
+const OCR_MAX = 1;                 // OCR is expensive — never run two at once
+const ocrCache = new Map();        // src -> recognized text (avoids re-OCR on re-scan)
+
+// Only worth OCR-ing if there's actually a text/theme rule to test against.
+function ocrUseful() {
+  return cfg.ocrEnabled && (((cfg.enabled && matcher)) || compiledThemes.length > 0);
+}
+
+function postCardOf(img) {
+  return (img.closest && img.closest("shreddit-post, .thing.link, article")) || img;
+}
+
+function scanOcr(root) {
+  if (!ocrUseful()) return;
+  const imgs = root.querySelectorAll ? root.querySelectorAll("img") : [];
+  imgs.forEach(img => {
+    if (img.dataset.rpfOcrSeen) return;
+    const src = img.currentSrc || img.src || "";
+    // Same CORS-readable constraint as the NSFW filter: only Reddit-hosted images.
+    if (!/(^|\.)redd\.it\//.test(src) && !/\.reddit(static)?\.com\//.test(src)) return;
+    if (/\/(award|emoji|avatar)/i.test(src) || /styles\.redditmedia/.test(src)) return;
+    if (isTiny(img)) return;
+    img.dataset.rpfOcrSeen = "1";
+    ocrQueue.push({ img, src });
+  });
+  pumpOcr();
+}
+
+function pumpOcr() {
+  while (ocrActive < OCR_MAX && ocrQueue.length) {
+    const { img, src } = ocrQueue.shift();
+    ocrActive++;
+    ocrOne(img, src).catch(() => {}).finally(() => { ocrActive--; pumpOcr(); });
+  }
+}
+
+async function ocrText(src) {
+  if (ocrCache.has(src)) return ocrCache.get(src);
+  const el = await loadCorsImage(src);         // untainted element for pixel reads
+  const canvas = document.createElement("canvas");
+  const maxW = 1000;                            // downscale huge images for speed
+  const scale = el.naturalWidth > maxW ? maxW / el.naturalWidth : 1;
+  canvas.width = Math.max(1, Math.round(el.naturalWidth * scale));
+  canvas.height = Math.max(1, Math.round(el.naturalHeight * scale));
+  canvas.getContext("2d").drawImage(el, 0, 0, canvas.width, canvas.height);
+  const dataUrl = canvas.toDataURL("image/png");
+  const res = await chrome.runtime.sendMessage({ type: "ocr-request", dataUrl });
+  const text = (res && res.ok && res.text) ? res.text : "";
+  ocrCache.set(src, text);
+  return text;
+}
+
+async function ocrOne(img, src) {
+  const text = await ocrText(src);
+  if (!text || !text.trim()) return;
+  const low = text.toLowerCase();
+  const card = postCardOf(img);
+  // Keyword hit -> revealable ("Show anyway"); theme hit -> hard-block.
+  if (cfg.enabled && matcher) {
+    const m = matcher.exec(low);
+    if (m) { hideEl(card, 'image text mentions "' + m[1] + '"', true); return; }
+  }
+  for (const t of compiledThemes) {
+    const r = matchTheme(low, t);
+    if (r.hit) { hideEl(card, 'image theme "' + t.name + '" (' + r.groupsHit.join(" + ") + ')', false); return; }
+  }
+}
+
 // A lock is a one-way commitment: once set, adult blocking stays on.
 function applyLock() {
   if (cfg.nsfwLocked) cfg.hideNsfw = true;
@@ -498,9 +763,16 @@ function applyLock() {
 // Seed the default keyword list into storage on first run so the popup and the
 // export/import feature always see the real list (not an empty placeholder).
 chrome.storage.sync.get(null, (raw) => {
+  const patch = {};
   if (!raw || !Array.isArray(raw.keywords) || raw.keywords.length === 0) {
-    chrome.storage.sync.set({ keywords: DEFAULTS.keywords });
+    patch.keywords = DEFAULTS.keywords;
   }
+  // Seed the starter theme only if `themes` has never been set (an empty array
+  // means the user deliberately cleared them — don't re-seed).
+  if (!raw || raw.themes === undefined) {
+    patch.themes = THEME_STARTER;
+  }
+  if (Object.keys(patch).length) chrome.storage.sync.set(patch);
 });
 
 chrome.storage.sync.get(DEFAULTS, (stored) => {
@@ -508,6 +780,7 @@ chrome.storage.sync.get(DEFAULTS, (stored) => {
   applyLock();
   applyAll();
   scanImages(document);
+  scanOcr(document);
   checkSubredditGate();
   updateBlockButton();
 
@@ -517,6 +790,7 @@ chrome.storage.sync.get(DEFAULTS, (stored) => {
         if (n.nodeType !== 1) continue;
         if (filteringActive()) scan(n);
         if (cfg.imgFilter) scanImages(n);
+        if (cfg.ocrEnabled) scanOcr(n);
       }
     }
   });
@@ -530,6 +804,9 @@ chrome.storage.sync.get(DEFAULTS, (stored) => {
       lastPath = location.pathname;
       checkSubredditGate();
       updateBlockButton();
+      // The allowlist only applies on the home feed, so entering/leaving it
+      // must re-evaluate everything already on the page.
+      if (allowModeActive()) applyAll();
     }
   }, 700);
 });
@@ -541,6 +818,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
     applyLock();
     applyAll();
     if (cfg.imgFilter) scanImages(document);
+    if (cfg.ocrEnabled) scanOcr(document);
     checkSubredditGate();
     updateBlockButton();
   });
